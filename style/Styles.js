@@ -86,6 +86,9 @@ const Styles = StyleSheet.create({
   selectedIcon: {
     backgroundColor: 'orange',
   },
+  totalIcon: {
+    backgroundColor: 'black',
+  },
   removeIconWrapper: {
     width: 24, //match the width of the trash icon
   },

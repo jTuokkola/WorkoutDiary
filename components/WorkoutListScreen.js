@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList} from 'react-native';
 import Styles from '../style/Styles';
 import { WorkoutContext } from './contexts';
@@ -8,15 +8,32 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 const WorkoutListScreen = () => {
   const { workouts, setWorkouts } = useContext(WorkoutContext);
   const { units } = useContext(SettingsContext);
+  const [totalDistances, setTotalDistances] = useState({ Running: 0, Cycling: 0, Swimming: 0 });
   const [expandedWorkoutIndex, setExpandedWorkoutIndex] = useState(null);
 
   const handleWorkoutPress = (index) => {
     setExpandedWorkoutIndex(expandedWorkoutIndex === index ? null : index);
   };
 
-  // convert distance based on units in settings
+  useEffect(() => {
+    //total distances for each sport type
+    const distances = {
+      Running: calculateTotalDistance("Running"),
+      Cycling: calculateTotalDistance("Cycling"),
+      Swimming: calculateTotalDistance("Swimming")
+    };
+    setTotalDistances(distances);
+  }, [workouts]);
+
+  const calculateTotalDistance = (sportType) => {
+    return workouts
+      .filter((workout) => workout.sportType === sportType)
+      .reduce((total, workout) => total + workout.distance, 0);
+  };
+
+  // convert distances based on units in settings
   const convertDistance = (distance) => {
-    if (units === 'miles') {
+    if (units === "miles") {
       return (distance * 0.621371).toFixed(2);
     } else {
       return distance.toFixed(2);
@@ -28,7 +45,6 @@ const WorkoutListScreen = () => {
     return `${convertDistance(distance)} ${units}`;
   };
 
-   // format date to display only the date without the time
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString();
   };
@@ -37,10 +53,11 @@ const WorkoutListScreen = () => {
     const updatedWorkouts = [...workouts];
     // remove the workout at the specified index
     updatedWorkouts.splice(index, 1);
-    // update the context with the updated array
+    // update context with the updated array
     setWorkouts(updatedWorkouts);
   };
 
+  //render icon for added workout
   const renderIcon = (sportType) => {
     switch (sportType) {
       case "Running":
@@ -53,6 +70,31 @@ const WorkoutListScreen = () => {
         return null;
     }
   };
+  
+  const getIconName = (sportType) => {
+    switch (sportType) {
+      case "Running":
+        return "run";
+      case "Cycling":
+        return "bike";
+      case "Swimming":
+        return "swim";
+      default:
+        return "";
+    }
+  };
+  //render icons with total distance
+  const renderTotalIcon = (sportType) => {
+    const totalDistance = totalDistances[sportType];
+    const distanceAbbreviation = units === "miles" ? "mi" : "km";
+    return (
+      <TouchableOpacity style={[Styles.icon, sportType === "Running" && Styles.totalIcon, sportType==="Swimming" && Styles.totalIcon, sportType==="Cycling" && Styles.totalIcon ]}>
+        <MaterialCommunityIcons name={getIconName(sportType)} size={30} color="white" />
+        <Text style={{color:"white", fontWeight:"bold"}}>{`${convertDistance(totalDistance)} ${distanceAbbreviation}`}</Text>
+      </TouchableOpacity>
+    );
+  };
+  
   
   // render added workout
   const renderItem = ({ item, index }) => (
@@ -76,10 +118,14 @@ const WorkoutListScreen = () => {
       </View>
     </TouchableOpacity>
   );
-
   return (
     <View style={Styles.containerTwo}>
       <Text style={Styles.WoutHeader}>Workout List</Text>
+      <View style={Styles.iconContainer}>
+        {renderTotalIcon("Running")}
+        {renderTotalIcon("Cycling")}
+        {renderTotalIcon("Swimming")}
+      </View>
       {workouts.length === 0 ? (
         <Text style={{ color: "red" }}>No workouts added</Text>
       ) : (
